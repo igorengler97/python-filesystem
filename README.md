@@ -22,6 +22,6 @@ pip install construct
 
 - Verificar se existem arquivos ou diretórios com o mesmo nome
     - OK
- 
+
 - Remoção de arquivos e diretórios
-    - 
+    - TODO
