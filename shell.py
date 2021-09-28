@@ -32,6 +32,8 @@ def main():
                 partition_size = 134217728
                 #partition_size = 4294967296
                 fs.format(partition_size)
+            elif command[0] == 'checkname':
+                fs.checkName()
             else:
                 print("Unknown command.")
 

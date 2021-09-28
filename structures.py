@@ -21,7 +21,7 @@ Block = Struct(
 ) # Total - 1024 bytes (2 setores de 512 bytes)
 
 Entry = Struct(
-    'name' / PaddedString(23, 'utf-8'),
+    'name' / Bytes(23),
     'attribute' / Bytes(1),
     'block_location' / Int32ul,
     'size' / Int32ul

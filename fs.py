@@ -199,7 +199,8 @@ class DFS:
     def dirAlreadyExists(self, dir_name):
         for entry in range(0, int(self.getPartitionSize()/Entry.sizeof()), Entry.sizeof()):
             entry = Entry.parse(self.file.read(Entry.sizeof()))
-            entry_name = ''.join(list(filter(lambda a: a != '', entry.name.split('\x00'))))
+            #entry_name = ''.join(list(filter(lambda a: a != '', entry.name.split('\x00'))))
+            entry_name = ''.join(list(filter(lambda a: a != '\x00', entry.name.decode('iso-8859-1').split('\x00'))))
             
             if entry_name == dir_name:
                 return entry
@@ -223,7 +224,8 @@ class DFS:
         dirs = list(filter(lambda a: a != '', path.split('/')))
         
         superblock = self.getSuperblock()
-        parent = Entry.parse(Entry.build(dict(name="", attribute=0x10, block_location=superblock.first_free_block, size=0)))
+        #parent = Entry.parse(Entry.build(dict(name="", attribute=0x10, block_location=superblock.first_free_block, size=0)))
+        parent = Entry.parse(Entry.build(dict(name=bytes(23), attribute=0x10, block_location=superblock.first_free_block, size=0)))
 
         self.file.seek(superblock.first_data_block * Block.sizeof())
 
@@ -241,7 +243,9 @@ class DFS:
 
                     self.file.seek((entry_pos - Entry.sizeof()))
 
-                    entry = Entry.build(dict(name=dirs[n], attribute=b"\x10", block_location=block.next, size=0))
+                    #entry = Entry.build(dict(name=dirs[n], attribute=b"\x10", block_location=block.next, size=0))
+                    name = bytes(dirs[n], encoding='utf-8') + bytes(23 - len(dirs[n]))
+                    entry = Entry.build(dict(name=name, attribute=b"\x10", block_location=block.next, size=0))
                     self.file.write(entry)
 
                     self.file.seek(((int(hex(block.next), 16) * Block.sizeof()) + Block.data.sizeof()))
@@ -293,7 +297,8 @@ class DFS:
 
                     self.file.seek((entry_pos - Entry.sizeof()))
 
-                    entry = Entry.build(dict(name=dirs[n], attribute=b"\x10", block_location=block.next, size=0))
+                    name = bytes(dirs[n], encoding='utf-8') + bytes(23 - len(dirs[n]))
+                    entry = Entry.build(dict(name=name, attribute=b"\x10", block_location=block.next, size=0))
                     self.file.write(entry)
 
                     self.file.seek(((int(hex(block.next), 16) * Block.sizeof()) + Block.data.sizeof()))
@@ -317,10 +322,13 @@ class DFS:
 
         for e in range(0, int(self.getPartitionSize()/Entry.sizeof()), Entry.sizeof()):
             entry = Entry.parse(self.file.read(Entry.sizeof()))
-            entry_name = ''.join(list(filter(lambda a: a != '', entry.name.split('\x00'))))
+            #entry_name = ''.join(list(filter(lambda a: a != '', entry.name.split('\x00'))))
+            entry_name = ''.join(list(filter(lambda a: a != '', entry.name.decode('iso-8859-1').split('\x00'))))
 
-            if entry.block_location != 0:
-                if entry.attribute == b'\x10':
+            if entry.block_location != 0 :
+                if entry_name[0] == "å": #0xE5
+                    pass
+                elif entry.attribute == b'\x10':
                     print(self.tabSpaces(level) + '/' + entry_name)
 
                     level = level + 1
@@ -343,6 +351,58 @@ class DFS:
                 
                 self.file.seek( last_dir[-level] )
                 last_dir.pop()
+
+
+    def checkName(self):
+        self.file.seek(1 * Block.sizeof())
+        level = 0
+        last_dir = [] 
+        myList = []
+
+        for e in range(0, int(self.getPartitionSize()/Entry.sizeof()), Entry.sizeof()):
+            entry = Entry.parse(self.file.read(Entry.sizeof()))
+            #entry_name = ''.join(list(filter(lambda a: a != '', entry.name.split('\x00'))))
+            entry_name = ''.join(list(filter(lambda a: a != '', entry.name.decode('iso-8859-1').split('\x00'))))
+
+            if entry.block_location != 0:
+                if entry.attribute == b'\x10':
+                    #print(self.tabSpaces(level) + '/' + entry_name + " " + str(level) + " " + str(last_dir))
+                    print(self.tabSpaces(level) + '/' + entry_name)
+
+                    if(tuple([last_dir, level, entry_name, entry.attribute])) in myList:
+                        print(self.tabSpaces(level) + "Inconsistencia de diretório")
+                    else:
+                        myList.append(tuple([last_dir, level, entry_name, entry.attribute]))
+                    
+                    level = level + 1
+                    last_dir.append(self.file.tell())
+                    
+                    self.file.seek(entry.block_location * Block.sizeof())
+
+                elif entry.attribute == b'\xFF':
+                    if entry.size != b'\xFF':
+                        self.file.seek(entry.size * Block.sizeof())
+                    else:
+                        break
+                else:
+                    #print(self.tabSpaces(level) + entry_name + " " + str(level) + " " + str(last_dir))
+                    print(self.tabSpaces(level)  + entry_name)
+                    
+                    if(tuple([last_dir, level, entry_name, entry.attribute])) in myList:
+                        print(self.tabSpaces(level) + "Inconsistencia de arquivo")
+                    else:
+                        myList.append(tuple([last_dir, level, entry_name, entry.attribute]))
+            else:    
+                level = level - 1
+                
+                if level < 0:
+                    break
+                
+                self.file.seek( last_dir[-level] )
+                last_dir.pop()
+
+    def delete(self):
+        pass
 
     def tabSpaces(self, how_many_tabs):
         return ((lambda x: how_many_tabs * x)('\t'))
