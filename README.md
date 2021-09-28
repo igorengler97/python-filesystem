@@ -17,3 +17,11 @@ pip install construct
 
 - Criação de diretório
     - OK
+
+## Funções extraa: ##
+
+- Verificar se existem arquivos ou diretórios com o mesmo nome
+    - OK
+ 
+- Remoção de arquivos e diretórios
+    - 
