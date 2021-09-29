@@ -358,17 +358,22 @@ class DFS:
 
             if entry.block_location != 0:
                 if entry.attribute == b'\x10':
+                    #print(self.tabSpaces(level) + '/' + entry_name + " " +str(level) + " " + str(last_dir) + " " + str(entry.attribute) + "\n" )
                     print(self.tabSpaces(level) + '/' + entry_name)
 
-                    if(tuple([last_dir, level, entry_name, entry.attribute])) in myList:
+                    if([str(last_dir), level, entry_name, entry.attribute]) in myList:
                         print(self.tabSpaces(level) + "Inconsistencia de diretório")
                     else:
-                        myList.append(tuple([last_dir, level, entry_name, entry.attribute]))
+                        myList.append([str(last_dir), level, entry_name, entry.attribute])
 
                     level = level + 1
                     last_dir.append(self.file.tell())
                     
                     self.file.seek(entry.block_location * Block.sizeof())
+
+                    #print("---------------------------")
+                    #print (myList)
+                    #print("---------------------------\n\n")
 
                 elif entry.attribute == b'\x5F':
                     if entry.size != b'\x5F':
@@ -380,10 +385,10 @@ class DFS:
                 else:
                     print(self.tabSpaces(level) + entry_name)
 
-                    if([last_dir, level, entry_name, entry.attribute]) in myList:
+                    if([str(last_dir), level, entry_name, entry.attribute]) in myList:
                         print(self.tabSpaces(level) + "Inconsistencia de arquivo")
                     else:
-                        myList.append([last_dir, level, entry_name, entry.attribute])
+                        myList.append([str(last_dir), level, entry_name, entry.attribute])
             else:    
                 level = level - 1
                 
