@@ -380,10 +380,10 @@ class DFS:
                 else:
                     print(self.tabSpaces(level) + entry_name)
 
-                    if(tuple([last_dir, level, entry_name, entry.attribute])) in myList:
+                    if([last_dir, level, entry_name, entry.attribute]) in myList:
                         print(self.tabSpaces(level) + "Inconsistencia de arquivo")
                     else:
-                        myList.append(tuple([last_dir, level, entry_name, entry.attribute]))
+                        myList.append([last_dir, level, entry_name, entry.attribute])
             else:    
                 level = level - 1
                 
@@ -391,7 +391,62 @@ class DFS:
                     break
                 
                 self.file.seek( last_dir[-level] )
-                last_dir.pop()            
+                last_dir.pop()
+
+    def changeFreeBlockForDel(self, free_block, count, superblock):
+        # Atualiza free_blocks_count
+        self.file.seek(6)
+        self.file.write((superblock.free_blocks_count + count).to_bytes(4, byteorder='little'))
+
+        # Atualiza first_free_blocks
+        self.file.seek(10)
+        self.file.write(free_block)
+
+    def delete(self, destination):
+        dirs = list(filter(lambda a: a != '', destination.split('/')))
+        
+        superblock = self.getSuperblock()
+        parent = Entry.parse(Entry.build(dict(name="", attribute=0x10, block_location=superblock.first_free_block, size=0)))
+
+        self.file.seek(superblock.first_data_block * Block.sizeof()) 
+        flag = False
+
+        for n in range(0, len(dirs)):
+            exist_entry = self.dirAlreadyExists(dirs[n])
+            
+            if exist_entry != False and exist_entry.attribute != b"\x21": #nao ta apagado e existe entrada
+                print(f"$ Destination {dirs[n]} already exist!")
+                if exist_entry.attribute == b"\x20":
+                    print(self.file.tell())
+                    flag = True
+                    self.file.seek(-9, 1)
+                    
+                    #attr = self.file.read(1)
+                    #print(attr)
+                    self.file.write(b'\x21')
+
+                    self.file.seek(exist_entry.block_location* Block.sizeof())
+                    self.file.seek(Block.data.sizeof(), 1)
+
+                    print(self.file.tell())
+                    ptr = self.file.read(Block.next.sizeof())
+                    print(ptr)
+                    if ptr != b"\x5F5F5F5F":
+                        self.file.seek(- Block.next.sizeof(), 1)
+                        pos = self.file.tell()
+                        self.file.seek(10)
+                        freeBlock = self.file.read(Block.next.sizeof())
+                        self.changeFreeBlockForDel((exist_entry.block_location).to_bytes(Block.next.sizeof(), byteorder='little'), 1, superblock)
+                        self.file.seek(pos)
+                        self.file.write(freeBlock)
+                    else:
+                        pass
+                    
+                self.file.seek(exist_entry.block_location * Block.sizeof())
+            else:
+                print(f"$ Destination directory {dirs[n]} NOT exist!")
+                break
+        
 
     def tabSpaces(self, how_many_tabs):
         return ((lambda x: how_many_tabs * x)('\t'))

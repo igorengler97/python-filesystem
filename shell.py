@@ -54,6 +54,8 @@ def main():
             elif command[0] == 'mkdir':
                 fs.mkdir(command[1])
             
+            elif command[0] == 'del':
+                fs.delete(command[1])
             else:
                 print("Unknown command.")
         
