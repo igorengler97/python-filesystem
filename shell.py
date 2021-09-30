@@ -22,7 +22,9 @@ def main():
                 print("format - format to max size defined")
                 print("mkdir - create directory")
                 print("copy2fs - copy file from disk to the file system")
-                print("copy2hd - copy file from the file system to the disk\n")
+                print("copy2hd - copy file from the file system to the disk")
+                print("checkname - verify name inconsistency")
+                print("del - delete file from the filesystem\n")
                 print("----------------------------------------------------")
             elif command[0] == 'ls':
                 fs.ls()
